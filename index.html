@@ -1,0 +1,114 @@
+# Importing the necessary modules
+import brython
+import sys
+import io
+import base64
+import keyword
+import re
+
+# Creating a HTML template for the website
+html = """
+<html>
+<head>
+    <title>SMJK Heng Ee Python Tester</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.0/brython.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.0/brython_stdlib.js"></script>
+    <style>
+        #code {
+            font-family: monospace;
+            font-size: 16px;
+            border: 1px solid black;
+            padding: 10px;
+        }
+        .keyword {
+            color: blue;
+            font-weight: bold;
+        }
+        .string {
+            color: green;
+        }
+        .comment {
+            color: gray;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        h1 {
+            color: darkblue;
+        }
+    </style>
+</head>
+<body onload="brython()">
+    <h1>SMJK Heng Ee Python Tester</h1>
+    <img src="https://www.hengee.edu.my/wp-content/uploads/2019/03/logo.png" alt="SMJK Heng Ee Logo" width="100" height="100">
+    <p>Enter your Python code below and it will run automatically.</p>
+    <div id="code" contenteditable="true" oninput="run()" onkeydown="complete(event)"></div>
+    <br>
+    <button id="clear" onclick="clear()">Clear</button>
+    <button id="format" onclick="format()">Format</button>
+    <p>Output:</p>
+    <pre id="output"></pre>
+    <p>Image:</p>
+    <img id="image" src="" alt="">
+    <script type="text/python">
+        # Getting the elements from the HTML document
+        from browser import document, html, window
+        code = document["code"]
+        output = document["output"]
+        image = document["image"]
+
+        # Defining a function to run the code
+        def run():
+            # Redirecting the standard output to a string buffer
+            sys.stdout = io.StringIO()
+            # Executing the code using eval or exec
+            try:
+                result = eval(code.text)
+                if result is not None:
+                    print(result)
+                # Removing any error class from the code element
+                code.classList.remove("error")
+            except SyntaxError as e:
+                exec(code.text)
+                # Removing any error class from the code element
+                code.classList.remove("error")
+            except Exception as e:
+                print(e)
+                # Adding an error class to the code element
+                code.classList.add("error")
+            # Getting the output from the buffer and displaying it
+            output.text = sys.stdout.getvalue()
+            # Restoring the standard output
+            sys.stdout = sys.__stdout__
+            # Checking if the code generated an image object
+            if "image" in globals():
+                # Converting the image object to a base64 encoded string
+                image_data = base64.b64encode(image.getvalue()).decode()
+                # Setting the image source attribute to display the image
+                image.src = f"data:image/png;base64,{image_data}"
+            else:
+                # Setting the image source attribute to an empty string
+                image.src = ""
+            # Highlighting the syntax of the code
+            highlight()
+
+        # Defining a function to clear the code and output
+        def clear():
+            # Setting the code and output to empty strings
+            code.text = ""
+            output.text = ""
+            # Setting the image source attribute to an empty string
+            image.src = ""
+        
+        # Defining a function to format the code
+        def format():
+            # Getting the indentation level of each line of code
+            indent_levels = get_indent_levels(code.text)
+            # Initializing a list to store the formatted lines of code
+            formatted_lines = []
+            # Looping through each line of code and its indentation level
+            for line, indent_level in zip(code.text.split("\n"), indent_levels):
+                # Stripping any leading or trailing whitespace from the line
+                line = line.strip()
+                # Adding four spaces for each indentation level to the line
